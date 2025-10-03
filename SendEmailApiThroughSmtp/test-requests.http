@@ -1,0 +1,21 @@
+### Send Email Request
+POST http://localhost:5000/api/email/send
+Content-Type: application/json
+
+{
+  "to": "recipient@example.com",
+  "subject": "Test Email from API",
+  "body": "<h1>Hello!</h1><p>This is a test email sent from the Email API.</p>",
+  "isHtml": true,
+  "cc": "",
+  "bcc": ""
+}
+
+### Get Email by ID
+GET http://localhost:5000/api/email/1
+
+### Get All Emails
+GET http://localhost:5000/api/email
+
+### Get Pending Emails
+GET http://localhost:5000/api/email/pending

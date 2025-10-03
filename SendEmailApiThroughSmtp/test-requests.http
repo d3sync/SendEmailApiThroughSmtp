@@ -1,6 +1,7 @@
 ### Send Email Request
 POST http://localhost:5000/api/email/send
 Content-Type: application/json
+X-API-Key: dev-api-key-12345-change-in-production
 
 {
   "to": "recipient@example.com",
@@ -13,9 +14,24 @@ Content-Type: application/json
 
 ### Get Email by ID
 GET http://localhost:5000/api/email/1
+X-API-Key: dev-api-key-12345-change-in-production
 
 ### Get All Emails
 GET http://localhost:5000/api/email
+X-API-Key: dev-api-key-12345-change-in-production
 
 ### Get Pending Emails
 GET http://localhost:5000/api/email/pending
+X-API-Key: dev-api-key-12345-change-in-production
+
+### Test without API Key (should return 401)
+GET http://localhost:5000/api/email
+
+### Test with invalid API Key (should return 401)
+GET http://localhost:5000/api/email
+X-API-Key: invalid-key
+
+````````
+
+
+# Response

@@ -1,0 +1,35 @@
+# IMPORTANT: Add these to your .gitignore to protect sensitive information
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+logs/
+*.log
+
+# Production configuration (if you create one)
+appsettings.Production.json
+
+# User-specific files
+*.user
+*.suo
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache/options directory
+.vs/
+
+# NuGet Packages
+*.nupkg
+.nuget/
+
+## Note: Consider NOT committing appsettings.Development.json if it contains real credentials
+## Instead, use User Secrets or environment variables for development

@@ -2,6 +2,8 @@ using Serilog;
 using SendEmailApiThroughSmtp.Configuration;
 using SendEmailApiThroughSmtp.Models;
 using SendEmailApiThroughSmtp.Services;
+using SendEmailApiThroughSmtp.Middleware;
+using Microsoft.OpenApi.Models;
 
 namespace SendEmailApiThroughSmtp
 {
@@ -28,12 +30,56 @@ namespace SendEmailApiThroughSmtp
 
                 var builder = WebApplication.CreateBuilder(args);
 
+                // Force known URLs for local development so Swagger is reachable
+                // This makes the app listen on http://localhost:5000
+                builder.WebHost.UseUrls("http://localhost:5000");
+
                 // Add Serilog
                 builder.Host.UseSerilog();
 
                 // Add services to the container
                 builder.Services.AddAuthorization();
-                builder.Services.AddOpenApi();
+                builder.Services.AddEndpointsApiExplorer();
+                
+                // Add Swagger
+                builder.Services.AddSwaggerGen(options =>
+                {
+                    options.SwaggerDoc("v1", new OpenApiInfo
+                    {
+                        Title = "Email API",
+                        Version = "v1",
+                        Description = "API for sending emails through SMTP with queue processing and LiteDB storage",
+                        Contact = new OpenApiContact
+                        {
+                            Name = "Email API Support"
+                        }
+                    });
+
+                    // Add API Key authentication to Swagger
+                    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                    {
+                        Description = "API Key authentication. Enter your API key in the text input below.",
+                        Name = "X-API-Key",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.ApiKey,
+                        Scheme = "ApiKeyScheme"
+                    });
+
+                    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "ApiKey"
+                                }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
+                });
 
                 // Configure SMTP settings
                 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
@@ -46,13 +92,20 @@ namespace SendEmailApiThroughSmtp
 
                 var app = builder.Build();
 
-                // Configure the HTTP request pipeline
-                if (app.Environment.IsDevelopment())
-                {
-                    app.MapOpenApi();
-                }
+                // Add API key authentication middleware FIRST
+                app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
 
                 app.UseAuthorization();
+
+                // Configure Swagger UI (always available for easy testing)
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Email API v1");
+                    options.RoutePrefix = "swagger";
+                    options.DocumentTitle = "Email API Documentation";
+                    options.DisplayRequestDuration();
+                });
 
                 // API Endpoints
                 app.MapPost("/api/email/send", async (EmailRequest request, IEmailRepository repository, IEmailQueue queue, ILogger<Program> logger) =>
@@ -116,7 +169,9 @@ namespace SendEmailApiThroughSmtp
                     }
                 })
                 .WithName("SendEmail")
-                .WithDescription("Queue an email to be sent via SMTP");
+                .WithDescription("Queue an email to be sent via SMTP")
+                .WithTags("Email")
+                .WithOpenApi();
 
                 app.MapGet("/api/email/{id}", (int id, IEmailRepository repository, ILogger<Program> logger) =>
                 {
@@ -140,7 +195,9 @@ namespace SendEmailApiThroughSmtp
                     }
                 })
                 .WithName("GetEmail")
-                .WithDescription("Get email status by ID");
+                .WithDescription("Get email status by ID")
+                .WithTags("Email")
+                .WithOpenApi();
 
                 app.MapGet("/api/email", (IEmailRepository repository, ILogger<Program> logger) =>
                 {
@@ -157,7 +214,9 @@ namespace SendEmailApiThroughSmtp
                     }
                 })
                 .WithName("GetAllEmails")
-                .WithDescription("Get all emails");
+                .WithDescription("Get all emails")
+                .WithTags("Email")
+                .WithOpenApi();
 
                 app.MapGet("/api/email/pending", (IEmailRepository repository, ILogger<Program> logger) =>
                 {
@@ -174,7 +233,11 @@ namespace SendEmailApiThroughSmtp
                     }
                 })
                 .WithName("GetPendingEmails")
-                .WithDescription("Get all pending emails");
+                .WithDescription("Get all pending emails")
+                .WithTags("Email")
+                .WithOpenApi();
+
+                Log.Information("Email API started. Access Swagger UI at: http://localhost:5000/swagger");
 
                 app.Run();
             }
